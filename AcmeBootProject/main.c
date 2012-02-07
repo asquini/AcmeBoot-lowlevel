@@ -49,13 +49,17 @@
  * ----------------------------------------------------------------------------
  */
 
-#define ACME_BOOTSTRAP_VERSION "1.19.1"
+#define ACME_BOOTSTRAP_VERSION "1.2a"  // Rob preliminary for clock tests based on 1.20
 
 /* ----------------------------------------------------------------------------
  * CHANGELOG
  * ----------------------------------------------------------------------------
  *
- * 1.19 watchdog timer enabled
+ * 1.20 Propagate SD_Stop() to work well with any microSD brand
+ *      Deleted the code to read watchdog.txt because too large to be
+ *      fixed in 16KB. 
+ *
+ * 1.19 Watchdog timer enabled
  *
  * 1.18 Read the Kernel CMDLINE configuration from the file cmdline.txt
  *      on the first microSD partition
@@ -107,6 +111,7 @@
 
 #include "main.h"
 #include <boot.h>
+#include <board_lowlevel.h>
 
 static struct {
 	// The Magic number is used used by the Pizzica ISP utility to change on-the-fly the
@@ -727,10 +732,10 @@ int main()
 	//-------------------------------------------------------------------------
 	// Configure traces
 	//-------------------------------------------------------------------------
-	TRACE_CONFIGURE_ISP(DBGU_STANDARD, 115200, BOARD_MCK);
+	TRACE_CONFIGURE_ISP(DBGU_STANDARD, 115200, MASTERCLK);
 
 	printf("\n\rAcmeBoot %s\n\r", ACME_BOOTSTRAP_VERSION);
-	printf("MCK = %dMHz\n\r", (int)(BOARD_MCK/1000000));
+	printf("MCK = %dMHz\n\r", (int)(MASTERCLK/1000000));
 
 	// If the RTC registers are unitializated set then to default 
 	// value of 20 aug 2010 11:49
@@ -991,20 +996,8 @@ int main()
 	printf("machtype=%d\n\r",mach_type_number);
 
 
-	//--------------------------------------------------------------------
-	// Read the requested watchdog state from watchdog.txt
-	// 0 - disabled
-        // 1 - enabled
-        // if the file is missing the watchdog will be enabled
-	//--------------------------------------------------------------------
-        watchdog_buffer='1';
-	Acme_SDcard_CopyFile(WATCHDOG_FILE,(unsigned char *)&watchdog_buffer,(unsigned long)1);
-	if(watchdog_buffer=='0'){
-          AT91C_BASE_WDTC->WDTC_WDMR = AT91C_WDTC_WDDIS;
-	  printf("watchdog disabled\n\r");
-        }else{
-	  printf("watchdog enabled\n\r");
-        }
+	// Enable the watchdog timer        
+	AT91C_BASE_WDTC->WDTC_WDMR = AT91C_WDTC_WDDIS;
 
 	//--------------------------------------------------------------------
 	// Read the Kernel image cutting the first 64 of header

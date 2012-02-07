@@ -43,6 +43,7 @@
 
 #include <board.h>
 #include <pio/pio.h>
+#include <board_lowlevel.h>
 
 /*
     Macros:
@@ -107,8 +108,11 @@ void BOARD_ConfigureSdram(unsigned char busWidth)
     // Enable corresponding PIOs
     PIO_Configure(&pinsSdram, 1);
     
-    // Enable EBI chip select for the SDRAM
+#ifdef LOW_NOISE_SDRAM
+    tmp = READ(AT91C_BASE_MATRIX, MATRIX_EBI) | AT91C_MATRIX_CS1A_SDRAMC_LOWNOISE;
+#else
     tmp = READ(AT91C_BASE_MATRIX, MATRIX_EBI) | AT91C_MATRIX_CS1A_SDRAMC;
+#endif
     WRITE(AT91C_BASE_MATRIX, MATRIX_EBI, tmp);
     
 
@@ -141,12 +145,19 @@ void BOARD_ConfigureSdram(unsigned char busWidth)
                                         | AT91C_SDRAMC_TRAS_6
                                         | AT91C_SDRAMC_TXSR_10);
 #endif
-
-	    WRITE(AT91C_BASE_SDRAMC, SDRAMC_LPR, 0x00000000); // ROB timeout=0x10;
+#ifdef SELF_REFRESH_SDRAM
+	    WRITE(AT91C_BASE_SDRAMC, SDRAMC_LPR, 0x00000001); // timeout=0x0;
+		                                                  // DS=00 full power;
+		                                                  // TCSR=01 not used;
+		                                                  // PASR = 000 refresh full array;
+		                                                  // LPCB=01 low power by self refresh SDRAM (sdclk active only on accesses)
+#else
+	    WRITE(AT91C_BASE_SDRAMC, SDRAMC_LPR, 0x00000000); // timeout=0x0;
 		                                                  // DS=00 full power;
 		                                                  // TCSR=01 not used;
 		                                                  // PASR = 000 refresh full array;
 		                                                  // LPCB=00 low power inhibited (always active sdclk)
+#endif
 
 		WRITE(AT91C_BASE_SDRAMC, SDRAMC_MDR, 0x00000001); // ROB low power SDRAM
 
@@ -199,7 +210,8 @@ void BOARD_ConfigureSdram(unsigned char busWidth)
     pSdram[0x4000000] = 0xcafedede;                 // Perform extended EMRS cycle on bank 2 (0..3 so bank2 is the third bank from 64MB to 96MB)
 #endif
 
-    WRITE(AT91C_BASE_SDRAMC, SDRAMC_TR, (BOARD_MCK * 7) / 1000000);        // Set Refresh Timer
+
+    WRITE(AT91C_BASE_SDRAMC, SDRAMC_TR, (MASTERCLK * 7) / 1000000);        // Set Refresh Timer
 
     WRITE(AT91C_BASE_SDRAMC, SDRAMC_MR, AT91C_SDRAMC_MODE_NORMAL_CMD);    // Set Normal mode
     pSdram[0] = 0x00000000;                        // Perform Normal mode

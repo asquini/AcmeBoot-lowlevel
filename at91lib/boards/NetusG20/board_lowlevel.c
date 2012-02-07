@@ -47,34 +47,8 @@
 #include "board.h"
 #include "board_memories.h"
 #include <pmc/pmc.h>
+#include <board_lowlevel.h>
 
-//------------------------------------------------------------------------------
-//         Internal definitions
-//------------------------------------------------------------------------------
-/*
-    Constants: Clock and PLL settings
-
-        BOARD_OSCOUNT - Startup time of main oscillator (in number of slow clock
-                        ticks). 
-        BOARD_USBDIV - USB PLL divisor value to obtain a 48MHz clock.
-        BOARD_CKGR_PLL - PLL frequency range.
-        BOARD_PLLCOUNT - PLL startup time (in number of slow clock ticks).
-        BOARD_MUL - PLL MUL value.
-        BOARD_DIV - PLL DIV value.
-        BOARD_PRESCALER - Master clock prescaler value.
-*/
-#define BOARD_OSCOUNT           (AT91C_CKGR_OSCOUNT & (64 << 8))
-#define BOARD_CKGR_PLLA         (AT91C_CKGR_SRCA | AT91C_CKGR_OUTA_0)
-#define BOARD_PLLACOUNT         (0x3F << 8)
-#define BOARD_MULA              (AT91C_CKGR_MULA & (0x2A << 16))
-#define BOARD_DIVA              (AT91C_CKGR_DIVA & 1)
-#define BOARD_PRESCALER         (0x00001300) 
-
-#define BOARD_USBDIV            AT91C_CKGR_USBDIV_1
-#define BOARD_CKGR_PLLB         AT91C_CKGR_OUTB_0
-#define BOARD_PLLBCOUNT         BOARD_PLLACOUNT
-#define BOARD_MULB              (25 << 16)
-#define BOARD_DIVB              5
 
 //------------------------------------------------------------------------------
 //         Internal functions
@@ -136,15 +110,26 @@ void LowLevelInit(void)
                                 | BOARD_DIVA;
     while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_LOCKA));
 
-    // Initialize PLLB for USB usage (if not already locked)
+
+// Initialize PLLB for USB usage (if not already locked)
+#ifdef MASTER_CLOCK_ON_PLLB
+        AT91C_BASE_PMC->PMC_PLLBR = BOARD_USBDIV
+                                    | BOARD_CKGR_PLLB
+                                    | BOARD_PLLBCOUNT
+                                    | BOARD_MULB
+                                    | BOARD_DIVB;
+				while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_LOCKB));
+
+#else
     if (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_LOCKB)) {
         AT91C_BASE_PMC->PMC_PLLBR = BOARD_USBDIV
                                     | BOARD_CKGR_PLLB
                                     | BOARD_PLLBCOUNT
                                     | BOARD_MULB
                                     | BOARD_DIVB;
-        while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_LOCKB));
+				while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_LOCKB));
     }
+#endif
 
     /* Wait for the master clock if it was already initialized */
     while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_MCKRDY));
@@ -156,7 +141,12 @@ void LowLevelInit(void)
     while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_MCKRDY));
 
     /* Switch to PLL + prescaler */
+#ifdef MASTER_CLOCK_ON_PLLB
+    AT91C_BASE_PMC->PMC_MCKR |= AT91C_PMC_CSS_PLLB_CLK;
+#else
     AT91C_BASE_PMC->PMC_MCKR |= AT91C_PMC_CSS_PLLA_CLK;
+#endif
+
     while (!(AT91C_BASE_PMC->PMC_SR & AT91C_PMC_MCKRDY));
 #endif
 
