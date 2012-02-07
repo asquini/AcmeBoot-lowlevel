@@ -11,11 +11,8 @@
                             // from the SDRAM signals enabling the SDRAM clock 
                             // only when the SDRAM is accesses. 
                             // (slows down slightly the CPU-SDRAM interface)
-//#define MASTER_CLOCK_ON_PLLB  // if defined the master clock is derived 
-                              // from the PLL B instead of PLL A.
-                              // CPU clock will be 48/96 MHz and SDRAM clock will be 16/32 MHz based on kernel setup of PLLB
 
-#define CPU_CLOCK_MULA  56      // valid only if not defined MASTER_CLOCK_ON_PLLB
+#define CPU_CLOCK_MULA  55      // valid only if not defined MASTER_CLOCK_ON_PLLB
                               // it is the multiplication value for the PLLA, responsible 
                               // to the cpu clock generation.
                               // the following values can give a correct baudrate for the serial ports:
@@ -37,7 +34,12 @@
                               // 52                 488 MHz       163 MHz
                               // 53                 498 MHz       166 MHz
                               // 55                 516 MHz       172 MHz
-                              // 56                 523 MHz       175 MHz
+                              
+//#define MASTER_CLOCK_ON_PLLB  // if defined the master clock is derived 
+                                // from the PLL B instead of PLL A.
+                                // CPU clock will be 48/96 MHz and SDRAM clock 
+                                // will be 16/32 MHz based on kernel setup of PLLB
+                                // still experimental
 
 
 // USER end
