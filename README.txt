@@ -1,3 +1,17 @@
+AcmeBoot-lowlevel contains additions to AcmeBoot to enable power reduction
+and EMI reductions of the NetusG20 by means of three different areas:
+ - LOW_NOISE_SDRAM controlling the slew rate of the memory interfacing signals
+ - SELF_REFRESH_SDRAM enabling the self-refresh of the SDRAM
+ - CPU_CLOCK_MULA reducing the clock of the core CPU and the memory interface
+
+To enable or disable these features edit:
+AcmeBoot-lowlevel/at91lib/boards/NetusG20/board_lowlevel.h
+
+and define or undefined the correspondent parameter or value.
+More info on the source itself
+
+Based on the AcmeBoot release 1.20
+ 
 ------------------------------------------------------------------------------
 
 AcmeBoot is a tiny boot loader for the Acme Systems Linux SBC
